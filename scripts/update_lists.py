@@ -12,8 +12,12 @@ GH_REPO = 'hello_world'
 GH_BRANCH = 'main'
 
 NORD_GENERIC_URL = 'https://api.github.com/repos/ip-address-list/nordvpn/contents/generic'
+
 PIA_REGIONS_URL = 'https://api.github.com/repos/Lars-/PIA-Servers/contents/regions'
+PIA_REGIONS_URL = 'https://api.github.com/repos/Lars-/PIA-Servers/git/trees/HEAD?recursive=1'
+
 PROTON_URL = 'https://raw.githubusercontent.com/X4BNet/lists_vpn/main/input/vpn/ips/protonvpn.txt'
+
 TOR_URL = 'https://raw.githubusercontent.com/X4BNet/lists_torexit/main/ipv4.txt'
 
 
@@ -71,18 +75,15 @@ def get_nord_ips():
     ]
     return ips
 
-def get_pia_ips():
-    resp = requests.get(PIA_REGIONS_URL).json()
-    region_urls = [
-        item['url']
-        for item in resp
-        if item['type'] == 'dir'
-    ]
 
-    ips = []
-    for url in region_urls:
-        files = requests.get(url).json()
-        ips.extend([item['name'].split('.')[0].replace('-', '.') for item in files if item['name'].endswith('.ovpn')])
+
+def get_pia_ips():
+    resp = requests.get(PIA_REGIONS_URL).json()['tree']
+    ips = [
+        item['path'].split('/')[-1].replace('.ovpn', '').replace('-', '.')
+        for item in resp
+        if item['path'].startswith('regions/') and item['path'].endswith('.ovpn')
+    ]
     return ips
 
 def get_tor_ips():
