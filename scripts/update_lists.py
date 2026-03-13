@@ -39,7 +39,7 @@ def get_proton_ips():
         if net
         for ip in ipaddress.ip_network(net)
     ]
-  return ips
+    return ips
 
 
 write_file(
