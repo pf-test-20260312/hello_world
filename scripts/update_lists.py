@@ -96,9 +96,9 @@ def get_tor_ips():
     return ips
 
 files_to_update = {
-  'proton.txt': get_proton_ips(),
-  'tor.txt': get_tor_ips(),
-  #'pia.txt': get_pia_ips(),
+  #'proton.txt': get_proton_ips(),
+  #'tor.txt': get_tor_ips(),
+  'pia.txt': get_pia_ips(),
   #'nord.txt': get_nord_ips()
 }
 
