@@ -25,9 +25,11 @@ def get_file_sha(path):
   resp.raise_for_status()
   return resp.json()['sha']
 
-def write_file(path, content, message):
+def write_file(path, content):
   sha = get_file_sha(path)
   url = f'https://api.github.com/repos/{GH_OWNER}/{GH_REPO}/contents/{path}'
+  content = '\n'.join(content) + '\n'
+  message = f'Test update: {path}'
   payload = {
     'message': message,
     'content': base64.b64encode(content.encode()).decode(),
@@ -48,10 +50,62 @@ def get_proton_ips():
         for ip in ipaddress.ip_network(net)
     ]
     return ips
+  
+def get_nord_ips():
+    resp = requests.get(NORD_GENERIC_URL).json()
+    region_urls = [
+        f['download_url']
+        for f in resp
+        if f['type'] == 'file' and f['name'].endswith('.txt')
+    ]
+
+    hostnames = []
+    for url in region_urls:
+        resp = requests.get(url).text.splitlines()
+        hostnames.extend(ln.strip() for ln in resp if ln.strip())
+
+    ips = [
+        ip
+        for item in hostnames
+        for ip in socket.gethostbyname_ex(item)[2]
+    ]
+    return ips
+
+def get_pia_ips():
+    resp = requests.get(PIA_REGIONS_URL).json()
+    region_urls = [
+        item['url']
+        for item in resp
+        if item['type'] == 'dir'
+    ]
+
+    ips = []
+    for url in region_urls:
+        files = requests.get(url).json()
+        ips.extend([item['name'].split('.')[0].replace('-', '.') for item in files if item['name'].endswith('.ovpn')])
+    return ips
+
+def get_tor_ips():
+    resp = requests.get(TOR_URL).text.splitlines()
+    ips = [
+        str(ip)
+        for net in resp
+        if net
+        for ip in ipaddress.ip_network(net)
+    ]
+    return ips
+
+files_to_update = {
+  #'proton.txt': get_proton_ips(),
+  'tor.txt': get_tor_ips(),
+  #'pia.txt': get_pia_ips(),
+  #'nord.txt': get_nord_ips()
+}
+
+for file_name, content in files_to_update.items():
+    write_file(
+      'proton.txt',
+      content
+    )
 
 
-write_file(
-  'proton.txt',
-  '\n'.join(get_proton_ips()) + '\n',
-  'Test update: proton.txt'
-)
