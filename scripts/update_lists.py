@@ -17,6 +17,14 @@ PROTON_URL = 'https://raw.githubusercontent.com/X4BNet/lists_vpn/main/input/vpn/
 TOR_URL = 'https://raw.githubusercontent.com/X4BNet/lists_torexit/main/ipv4.txt'
 
 
+def get_file_sha(path):
+  url = f'https://api.github.com/repos/{GH_OWNER}/{GH_REPO}/contents/{path}'
+  resp = requests.get(url, headers=HEADERS, params={'ref': GH_BRANCH})
+  if resp.status_code == 404:
+    return None
+  resp.raise_for_status()
+  return resp.json()['sha']
+
 def write_file(path, content, message):
   sha = get_file_sha(path)
   url = f'https://api.github.com/repos/{GH_OWNER}/{GH_REPO}/contents/{path}'
