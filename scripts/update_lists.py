@@ -28,7 +28,6 @@ def get_file_sha(path):
 def write_file(path, content):
     sha = get_file_sha(path)
     url = f'https://api.github.com/repos/{GH_OWNER}/{GH_REPO}/contents/{path}'
-    content = format_ips(content)
     message = f'Test update: {path}'
     payload = {
         'message': message,
@@ -50,12 +49,12 @@ def format_ips(ips):
 
 def get_proton_ips():
     resp = requests.get(PROTON_URL).text.splitlines()
-    ips = [
+    ips = {
         ip
         for item in resp
         for ip in parse_ips(item)
-    ]
-    return ips
+    }
+    return format_ips(ips)
   
 def get_nord_ips():
     resp = requests.get(NORD_GENERIC_URL).json()
@@ -69,34 +68,35 @@ def get_nord_ips():
     for url in region_urls:
         resp = requests.get(url).text.splitlines()
         hostnames.extend(ln.strip() for ln in resp if ln.strip())
-
-    ips = [
+        
+    ips = {
         ip
         for item in hostnames
-        for ip in parse_ips(socket.gethostbyname_ex(item)[2])
-    ]
-    return ips
+        for up_ips in socket.gethostbyname_ex(item)[2]
+        for ip in parse_ips(up_ips)
+    }
+    return format_ips(ips)
 
 def get_pia_ips():
     resp = requests.get(PIA_REGIONS_URL).json()['tree']
-    ips = [
+    ips = {
         ip
         for item in resp
         if item['path'].startswith('regions/') and item['path'].endswith('.ovpn')
         for ip in parse_ips(
             item['path'].split('/')[-1].replace('.ovpn', '').replace('-', '.')
         )
-    ]
-    return ips
+    }
+    return format_ips(ips)
 
 def get_tor_ips():
     resp = requests.get(TOR_URL).text.splitlines()
-    ips = [
+    ips = {
         ip
         for item in resp
         for ip in parse_ips(item)
-    ]
-    return ips
+    }
+    return format_ips(ips)
 
 files_to_update = {
     'proton.txt': get_proton_ips(),
