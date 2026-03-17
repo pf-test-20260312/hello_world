@@ -12,12 +12,8 @@ GH_REPO = 'hello_world'
 GH_BRANCH = 'main'
 
 NORD_GENERIC_URL = 'https://api.github.com/repos/ip-address-list/nordvpn/contents/generic'
-
-PIA_REGIONS_URL = 'https://api.github.com/repos/Lars-/PIA-Servers/contents/regions'
 PIA_REGIONS_URL = 'https://api.github.com/repos/Lars-/PIA-Servers/git/trees/HEAD?recursive=1'
-
 PROTON_URL = 'https://raw.githubusercontent.com/X4BNet/lists_vpn/main/input/vpn/ips/protonvpn.txt'
-
 TOR_URL = 'https://raw.githubusercontent.com/X4BNet/lists_torexit/main/ipv4.txt'
 
 
@@ -45,13 +41,19 @@ def write_file(path, content):
   resp.raise_for_status()
   print(f'Wrote: {path}')
 
+def parse_ips(ips):
+    try: return ipaddress.ip_network(ips)
+    except: return []
+
+def format_ips(ips):
+    return '\n'.join([str(ip) for ip in sorted(ips)]) + '\n'
+
 def get_proton_ips():
     resp = requests.get(PROTON_URL).text.splitlines()
     ips = [
         str(ip)
-        for net in resp
-        if net
-        for ip in ipaddress.ip_network(net)
+        for item in resp
+        for ip in parse_ips(item)
     ]
     return ips
   
@@ -71,42 +73,42 @@ def get_nord_ips():
     ips = [
         ip
         for item in hostnames
-        for ip in socket.gethostbyname_ex(item)[2]
+        for ip in parse_ips(socket.gethostbyname_ex(item)[2])
     ]
     return ips
-
-
 
 def get_pia_ips():
     resp = requests.get(PIA_REGIONS_URL).json()['tree']
     ips = [
-        item['path'].split('/')[-1].replace('.ovpn', '').replace('-', '.')
+        ip
         for item in resp
         if item['path'].startswith('regions/') and item['path'].endswith('.ovpn')
+        for ip in parse_ips(
+            item['path'].split('/')[-1].replace('.ovpn', '').replace('-', '.')
+        )
     ]
     return ips
 
 def get_tor_ips():
     resp = requests.get(TOR_URL).text.splitlines()
     ips = [
-        str(ip)
-        for net in resp
-        if net
-        for ip in ipaddress.ip_network(net)
+        ip
+        for item in resp
+        for ip in parse_ips(item)
     ]
     return ips
 
 files_to_update = {
-  'proton.txt': get_proton_ips(),
-  'tor.txt': get_tor_ips(),
-  'pia.txt': get_pia_ips(),
-  'nord.txt': get_nord_ips()
+    'proton.txt': get_proton_ips(),
+    'tor.txt': get_tor_ips(),
+    'pia.txt': get_pia_ips(),
+    'nord.txt': get_nord_ips()
 }
 
 for file_name, content in files_to_update.items():
     write_file(
-      file_name,
-      content
+        file_name,
+        format_ips(content)
     )
 
 
