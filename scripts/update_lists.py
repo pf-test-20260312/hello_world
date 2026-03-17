@@ -18,28 +18,28 @@ TOR_URL = 'https://raw.githubusercontent.com/X4BNet/lists_torexit/main/ipv4.txt'
 
 
 def get_file_sha(path):
-  url = f'https://api.github.com/repos/{GH_OWNER}/{GH_REPO}/contents/{path}'
-  resp = requests.get(url, headers=HEADERS, params={'ref': GH_BRANCH})
-  if resp.status_code == 404:
-    return None
-  resp.raise_for_status()
-  return resp.json()['sha']
+    url = f'https://api.github.com/repos/{GH_OWNER}/{GH_REPO}/contents/{path}'
+    resp = requests.get(url, headers=HEADERS, params={'ref': GH_BRANCH})
+    if resp.status_code == 404:
+        return None
+    resp.raise_for_status()
+    return resp.json()['sha']
 
 def write_file(path, content):
-  sha = get_file_sha(path)
-  url = f'https://api.github.com/repos/{GH_OWNER}/{GH_REPO}/contents/{path}'
-  content = '\n'.join(content) + '\n'
-  message = f'Test update: {path}'
-  payload = {
-    'message': message,
-    'content': base64.b64encode(content.encode()).decode(),
-    'branch': GH_BRANCH
-  }
-  if sha:
-    payload['sha'] = sha
-  resp = requests.put(url, headers=HEADERS, json=payload)
-  resp.raise_for_status()
-  print(f'Wrote: {path}')
+    sha = get_file_sha(path)
+    url = f'https://api.github.com/repos/{GH_OWNER}/{GH_REPO}/contents/{path}'
+    content = format_ips(content)
+    message = f'Test update: {path}'
+    payload = {
+        'message': message,
+        'content': base64.b64encode(content.encode()).decode(),
+        'branch': GH_BRANCH
+    }
+    if sha:
+      payload['sha'] = sha
+    resp = requests.put(url, headers=HEADERS, json=payload)
+    resp.raise_for_status()
+    print(f'Wrote: {path}')
 
 def parse_ips(ips):
     try: return ipaddress.ip_network(ips)
@@ -51,7 +51,7 @@ def format_ips(ips):
 def get_proton_ips():
     resp = requests.get(PROTON_URL).text.splitlines()
     ips = [
-        str(ip)
+        ip
         for item in resp
         for ip in parse_ips(item)
     ]
@@ -108,7 +108,7 @@ files_to_update = {
 for file_name, content in files_to_update.items():
     write_file(
         file_name,
-        format_ips(content)
+        content
     )
 
 
